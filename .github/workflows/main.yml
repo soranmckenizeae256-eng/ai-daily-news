@@ -28,8 +28,14 @@ jobs:
         
     - name: Run AI News Collector
       env:
-        FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
+
+
+    FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
+    DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
+
+        
       run: |
         python main.py
