@@ -27,7 +27,11 @@ from config import (
     MAX_NEWS_PER_CATEGORY,
     TOTAL_NEWS_COUNT,
     RSS_SOURCES,
-    HTTP_SOURCES
+    HTTP_SOURCES,
+    AI_PROVIDER,
+    OPENAI_API_KEY,
+    DEEPSEEK_API_KEY,
+    DEEPSEEK_API_BASE
 )
 
 logger = logging.getLogger(__name__)
@@ -35,9 +39,46 @@ logger = logging.getLogger(__name__)
 class NewsCollector:
     def __init__(self):
         self.articles = []
+<<<<<<< HEAD
+        self.client = None
+        self.ai_provider = AI_PROVIDER.lower()
+        
+        logger.info(f"AI提供商配置: {self.ai_provider}")
+        logger.info(f"DEEPSEEK_API_KEY是否存在: {'是' if DEEPSEEK_API_KEY else '否'}")
+        logger.info(f"OPENAI_API_KEY是否存在: {'是' if OPENAI_API_KEY else '否'}")
+        
+        # 初始化AI客户端
+        if self.ai_provider == 'deepseek':
+            if DEEPSEEK_API_KEY:
+                logger.info("正在初始化DeepSeek客户端...")
+                self.client = OpenAI(
+                    api_key=DEEPSEEK_API_KEY,
+                    base_url=DEEPSEEK_API_BASE
+                )
+                logger.info("DeepSeek客户端初始化成功")
+            else:
+                logger.error("DeepSeek API密钥不存在，无法初始化客户端")
+        elif self.ai_provider == 'openai':
+            if OPENAI_API_KEY:
+                logger.info("正在初始化OpenAI客户端...")
+                self.client = OpenAI(
+                    api_key=OPENAI_API_KEY
+                )
+                logger.info("OpenAI客户端初始化成功")
+            else:
+                logger.error("OpenAI API密钥不存在，无法初始化客户端")
+        
+        if not self.client:
+            logger.warning("未配置有效的AI API密钥，将使用原始标题")
+=======
         self.client = OpenAI(
             api_key=os.environ.get('OPENAI_API_KEY', ''),
+<<<<<<< HEAD
+=======
+            http_client=httpx(proxies=os.environ.get('HTTP_PROXY', None))
+>>>>>>> 8af3ff9 (feat: 初始化AI新闻日报项目)
         )
+>>>>>>> a60790c (feat: 添加详细调试日志和配置文件修复)
         
     def parse_rss_feed(self, feed_url, source_name):
         """解析RSS订阅源"""
@@ -210,40 +251,97 @@ class NewsCollector:
                     
         return '📊 其他要闻'
         
+    def translate_to_chinese(self, text):
+        """将英文翻译成中文，保持口语化"""
+        if not self.client:
+            logger.warning("AI客户端未初始化，跳过翻译")
+            return text
+            
+        try:
+            logger.info(f"开始翻译文本: {text[:50]}...")
+            prompt = f"""
+请将以下英文文本翻译成中文，要求：
+1. 保持口语化，符合中国人的阅读习惯
+2. 不要直译，要流畅自然
+3. 保留新闻的核心信息
+4. 直接输出翻译结果，不要添加任何解释
+
+文本：{text}
+"""
+            
+            # 根据AI提供商选择合适的模型
+            model = "deepseek-chat" if self.ai_provider == 'deepseek' else "gpt-3.5-turbo"
+            logger.info(f"使用模型: {model}")
+            
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=200,
+                temperature=0.7
+            )
+            
+            translation = response.choices[0].message.content.strip()
+            logger.info(f"翻译结果: {translation}")
+            return translation if translation else text
+            
+        except Exception as e:
+            logger.error(f"翻译失败: {e}")
+            return text
+            
     def summarize_with_ai(self, article):
-        """使用AI总结文章"""
+        """使用AI总结文章，生成中文口语化摘要"""
         title = article['title']
         summary = article.get('summary', '')[:500]
         
-        if not os.environ.get('OPENAI_API_KEY'):
-            return title
+        logger.info(f"处理文章: {title[:50]}...")
+        is_chinese = any(ord(c) > 127 for c in title)
+        logger.info(f"标题是否为中文: {'是' if is_chinese else '否'}")
+        
+        # 先将英文标题翻译成中文
+        if is_chinese:
+            chinese_title = title
+            logger.info(f"标题为中文，直接使用: {chinese_title}")
+        else:
+            chinese_title = self.translate_to_chinese(title)
+            article['translated_title'] = chinese_title
+            logger.info(f"英文标题翻译为: {chinese_title}")
+        
+        if not self.client:
+            logger.info("AI客户端未初始化，使用原始标题作为摘要")
+            return chinese_title
             
         try:
+            logger.info("开始生成摘要...")
             prompt = f"""
 请用一句大白话总结以下AI新闻标题和摘要（20-30字以内），使其通俗易懂：
 
-标题: {title}
+标题: {chinese_title}
 摘要: {summary}
 
 要求：
-1. 用简单的语言解释新闻内容
+1. 用简单的中文口语解释新闻内容
 2. 不要包含公司名称
 3. 直接输出总结，不要添加任何解释
 """
             
+            # 根据AI提供商选择合适的模型
+            model = "deepseek-chat" if self.ai_provider == 'deepseek' else "gpt-3.5-turbo"
+            logger.info(f"使用模型: {model}")
+            
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=50,
                 temperature=0.7
             )
             
             summary_text = response.choices[0].message.content.strip()
-            return summary_text if summary_text else title
+            logger.info(f"生成的摘要: {summary_text}")
+            return summary_text if summary_text else chinese_title
             
         except Exception as e:
-            logger.warning(f"AI总结失败: {e}")
-            return title
+            logger.error(f"AI总结失败: {e}")
+            return chinese_title
             
     def filter_and_categorize(self, articles):
         """过滤和分类文章"""
@@ -315,7 +413,9 @@ class NewsCollector:
             if category_articles:
                 report_lines.append(f"{category}")
                 for article in category_articles:
-                    report_lines.append(f"{article['index']}. **{article['title']}**")
+                    # 使用翻译后的标题，如果没有则使用原始标题
+                    display_title = article.get('translated_title', article['title'])
+                    report_lines.append(f"{article['index']}. **{display_title}**")
                     report_lines.append(f"   📝 {article['summary_ai']}")
                     report_lines.append(f"   🔗 {article['link']}")
                     report_lines.append("")

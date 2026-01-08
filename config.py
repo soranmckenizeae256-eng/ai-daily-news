@@ -29,6 +29,11 @@ CATEGORY_KEYWORDS = {
 
 FEISHU_WEBHOOK_URL = os.environ.get('FEISHU_WEBHOOK_URL', '')
 
+# AI服务配置
+AI_PROVIDER = os.environ.get('AI_PROVIDER', 'deepseek')  # 默认使用deepseek
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
+DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1'
+
 DATETIME_FORMAT = '%Y年%m月%d日'
 NEWS_DATE_FORMAT = '%Y-%m-%d'
 
