@@ -6,7 +6,6 @@ AI Daily News Collector - Main Entry Point
 
 import os
 import sys
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -48,7 +47,6 @@ def main():
     logger.info("=" * 60)
     logger.info("\n" + report)
     
-<<<<<<< HEAD
     logger.info(f"飞书Webhook URL配置状态: {'已配置' if os.environ.get('FEISHU_WEBHOOK_URL') else '未配置'}")
     if os.environ.get('FEISHU_WEBHOOK_URL'):
         sender = FeishuSender()
@@ -56,11 +54,6 @@ def main():
         # 尝试使用更简单可靠的文本消息格式
         success = sender.send_text_message(report)
         logger.info(f"飞书消息发送结果: {'成功' if success else '失败'}")
-=======
-    if os.environ.get('FEISHU_WEBHOOK_URL'):
-        sender = FeishuSender()
-        sender.send_rich_text_message(report)
->>>>>>> 8af3ff9 (feat: 初始化AI新闻日报项目)
     else:
         logger.warning("未配置飞书Webhook URL，跳过发送")
         
