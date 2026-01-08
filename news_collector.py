@@ -37,7 +37,6 @@ class NewsCollector:
         self.articles = []
         self.client = OpenAI(
             api_key=os.environ.get('OPENAI_API_KEY', ''),
-            http_client=httpx(proxies=os.environ.get('HTTP_PROXY', None))
         )
         
     def parse_rss_feed(self, feed_url, source_name):
