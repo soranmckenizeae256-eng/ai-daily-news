@@ -48,9 +48,13 @@ def main():
     logger.info("=" * 60)
     logger.info("\n" + report)
     
+    logger.info(f"飞书Webhook URL配置状态: {'已配置' if os.environ.get('FEISHU_WEBHOOK_URL') else '未配置'}")
     if os.environ.get('FEISHU_WEBHOOK_URL'):
         sender = FeishuSender()
-        sender.send_rich_text_message(report)
+        logger.info("开始发送消息到飞书...")
+        # 尝试使用更简单可靠的文本消息格式
+        success = sender.send_text_message(report)
+        logger.info(f"飞书消息发送结果: {'成功' if success else '失败'}")
     else:
         logger.warning("未配置飞书Webhook URL，跳过发送")
         
